@@ -4,22 +4,24 @@ require 'seedling/railtie'
 
 module Seedling
   def self.load_seeds(dir, always = false)
-    raise "Seed directory #{dir} doesn't exists!" unless File.exists? dir
+    raise "Seed directory #{dir} doesn't exists!" unless Dir.exists? dir
     
     connection.transaction do
-      Dir.glob(File.join(dir, '*.yml')).each do |seed_file|
-        table_name = File.basename(seed_file, '.yml')
-        
-        if always || table_empty?(table_name)
-          load_table seed_file, table_name
-        end
+      Dir["#{dir}/*.yml"].each do |seed_file|
+        load_model seed_file, always
       end
     end
   end
 
-  def self.load_table(seed_file, table_name)
-    unless model_class = table_to_model(table_name)
+  def self.load_model(seed_file, always = false)
+    table_name = File.basename(seed_file, '.yml')
+    
+    unless model_class = model_for_table(table_name)
       raise "No corresponding model found for #{table_name} table"
+    end
+    if !always and model_class.any?
+      Rails.logger.info "Skipping #{model_class}, data already exists."
+      return
     end
     seeds = File.read seed_file
     seeds = YAML.load_documents seeds
@@ -75,13 +77,13 @@ module Seedling
 
   def self.dump_seeds(dir)
     ar_models.each do |model_class|
-      dump_table dir, model_class.table_name if model_class.any?
+      dump_model dir, model_class
     end
   end
 
-  def self.dump_table(dir, table_name)
-    unless model_class = table_to_model(table_name)
-      puts "No corresponding model found for #{table_name} table"
+  def self.dump_model(dir, model_class)
+    unless model_class.any?
+      Rails.logger.info "Skipping #{model_class}, no data to export."
       return
     end
     records = model_class.all.map(&:attributes)
@@ -90,10 +92,16 @@ module Seedling
       record.reject! { |key, value| value.blank? }
     end
     FileUtils.mkdir_p dir
-    filename = "#{File.join dir, table_name}.yml"
+    filename = "#{File.join dir, model_class.table_name}.yml"
     File.open(filename, 'w') do |file|
       file.write records.to_yaml
     end
+  end
+
+  private
+
+  def self.connection
+    ActiveRecord::Base.connection
   end
 
   def self.ar_models
@@ -104,20 +112,7 @@ module Seedling
     @ar_models
   end
 
-  def self.table_to_model(table_name)
+  def self.model_for_table(table_name)
     ar_models.detect { |m| m.table_name == table_name }
-  end
-
-  def self.table_empty?(table_name)
-    quoted = connection.quote_table_name(table_name)
-    connection.select_value("SELECT COUNT(*) FROM #{quoted}").to_i.zero?
-  end
-
-  def self.tables
-    connection.tables.reject { |table| table =~ /^schema_/ }
-  end
-
-  def self.connection
-    ActiveRecord::Base.connection
   end
 end

@@ -1,5 +1,3 @@
-STDOUT.sync = true
-
 namespace :db do
   @seed_dir = File.join Rails.root, 'db', 'seed'
 
