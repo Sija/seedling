@@ -14,4 +14,7 @@ Gem::Specification.new do |gem|
   gem.name          = 'seedling'
   gem.require_paths = ['lib']
   gem.version       = Seedling::VERSION
+
+  gem.add_dependency 'rails', '~> 3'
+  gem.add_dependency 'activerecord', '~> 3'
 end
