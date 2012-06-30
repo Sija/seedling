@@ -20,7 +20,7 @@ module Seedling
       raise "No corresponding model found for #{table_name} table"
     end
     if !always and model_class.any?
-      Rails.logger.info "Skipping #{model_class}, data already exists."
+      Rails.logger.info "Skipping #{model_class} seeds, data already exists."
       return
     end
     seeds = File.read seed_file
@@ -83,7 +83,7 @@ module Seedling
 
   def self.dump_model(dir, model_class)
     unless model_class.any?
-      Rails.logger.info "Skipping #{model_class}, no data to export."
+      Rails.logger.info "Skipping #{model_class} model, no data to export."
       return
     end
     records = model_class.all.map(&:attributes)
