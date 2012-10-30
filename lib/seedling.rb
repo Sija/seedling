@@ -15,6 +15,7 @@ module Seedling
 
   def self.load_model(seed_file, always = false)
     table_name = File.basename(seed_file, '.yml')
+    table_name.sub! /^(\d+)\./, '' # remove numerical prefix
     
     unless model_class = model_for_table(table_name)
       raise "No corresponding model found for #{table_name} table"
