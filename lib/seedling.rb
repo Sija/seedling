@@ -49,7 +49,7 @@ module Seedling
         
         model = model_class.new attributes, options
         properties.each do |key, value|
-          model[key] = value
+          model.send "#{key}=", value
         end
         files.each do |key, filename|
           path = File.join File.dirname(seed_file), table_name, filename
